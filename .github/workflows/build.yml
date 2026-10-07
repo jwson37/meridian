@@ -11,6 +11,8 @@ jobs:
       - uses: actions/setup-java@v4
         with: { distribution: temurin, java-version: '17' }
       - uses: android-actions/setup-android@v3
+        with:
+          packages: 'tools'
       - name: Install SDK platform
         run: sdkmanager "platforms;android-33" "build-tools;33.0.2"
       - uses: gradle/actions/setup-gradle@v4
