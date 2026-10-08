@@ -7,6 +7,7 @@ import android.os.*;
 import android.text.*;
 import android.view.*;
 import android.widget.*;
+import android.util.TypedValue;
 import java.io.*;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -71,9 +72,99 @@ public class MainActivity extends Activity {
     "Alioth|12 54 01.750|55 57 35.36|111.74|-8.99","Alkaid|13 47 32.439|49 18 47.76|-121.23|-15.56",
     "Mizar|13 23 55.541|54 55 31.27|121.23|-22.01","Merak|11 01 50.477|56 22 56.73|81.66|33.74",
     "Phecda|11 53 49.847|53 41 41.14|107.76|11.16","Megrez|12 15 25.560|57 01 57.42|103.56|7.81"};
-    static final int MAX = 1200;           // capacity; N = stars currently loaded
+    // Constellation stick figures: Cons=chain;chain  (Bayer/Flamsteed ids, consecutive stars joined; X@Con = star of another constellation)
+    static final String[] CONS = {
+    "And=Alp Del Bet Gam;Bet Mu Nu",
+    "Ant=Alp Eps Iot",
+    "Aps=Alp Gam Bet;Gam Del1",
+    "Aqr=Eps Mu Bet Alp The;Alp Gam Zet Eta;Zet Pi",
+    "Aql=Bet Alp Gam;Alp Del Lam;Gam Zet Eps",
+    "Ara=Alp Bet Gam Del Eta Alp",
+    "Ari=Gam Bet Alp 41",
+    "Aur=Alp Bet The Bet@Tau Iot Alp",
+    "Boo=Alp Eps Del Bet Gam Rho Alp",
+    "Cae=Alp Gam Bet Del",
+    "Cam=Bet Alp",
+    "Cnc=Alp Del Gam Eta;Del Bet",
+    "CVn=Alp2 Bet",
+    "CMa=Bet Alp Del Eta;Del Eps",
+    "CMi=Bet Alp",
+    "Cap=Alp2 The Iot Gam Del Zet Ome Psi Bet Alp2",
+    "Car=Alp Ups;Eps Iot;Ups Bet",
+    "Cas=Bet Alp Gam Del Eps",
+    "Cen=Bet Eps Gam Del;Eps Zet Eta",
+    "Cep=Alp Bet Gam Iot Zet Alp",
+    "Cet=Alp Gam Del Zet The Eta Bet;Eta Iot",
+    "Cha=Alp Gam Bet Del2 Gam",
+    "Cir=Alp Bet Gam",
+    "Col=Eps Alp Bet Gam;Bet Del",
+    "Com=Alp Bet Gam",
+    "CrA=The Eta Zet Del Bet Alp Gam Eps",
+    "CrB=The Bet Alp Gam Del Eps Iot",
+    "Crv=Gam Eps Del Bet Gam",
+    "Crt=Alp Bet Gam Del Alp",
+    "Cru=Gam Alp;Bet Del",
+    "Cyg=Alp Gam Bet1;Del Gam Eps",
+    "Del=Alp Bet Del Gam Alp;Del Eps",
+    "Dor=Alp Gam;Alp Bet Del Alp;Zet Bet",
+    "Dra=Gam Bet Nu Xi Gam;Xi Del Eps Chi Zet Eta The Iot Alp Kap Lam",
+    "Equ=Eps Alp Gam Del Alp",
+    "Eri=Bet Omi1 Gam Pi Del Eps Eta;The1 Iot Kap Phi Chi Alp",
+    "For=Alp Bet Nu",
+    "Gem=Alp The Tau Eps Mu Eta;Bet Kap Del Zet Gam",
+    "Gru=Gam Alp Bet Eps Zet",
+    "Her=Zet Eps Pi Eta Zet;Eta Sig Tau;Eps Del Alp1;Zet Bet Gam",
+    "Hor=Alp Del Iot Eta",
+    "Hya=Del Sig Eta Eps Zet The Iot Alp Lam Nu Pi Gam",
+    "Hyi=Alp Bet Gam",
+    "Ind=Alp The Bet",
+    "Lac=Bet Alp 5 4 2 1",
+    "Leo=Alp Eta Gam Zet Mu Eps;Gam Del Bet The Del",
+    "LMi=10 21 46 Bet 21",
+    "Lep=Mu Eps Alp Bet Gam;Alp Zet Eta;Zet Del Gam",
+    "Lib=Alp2 Bet Gam Sig Alp2",
+    "Lup=Alp Bet Del Phi1 Eta Gam Eps Kap Zet Alp",
+    "Lyn=Alp 38 31 21",
+    "Lyr=Alp Zet1 Bet Gam Del2 Zet1",
+    "Men=Alp Gam Eta Bet",
+    "Mic=Iot Alp Gam Eps",
+    "Mon=Bet Gam;Del Alp;Eps Del",
+    "Mus=Alp Bet Del Gam Alp;Alp Eps",
+    "Nor=Gam2 Eps Eta Gam2",
+    "Oct=Nu Bet Del Nu",
+    "Oph=Bet Gam Nu;Bet Alp Kap Lam Del Eps Zet Eta",
+    "Ori=Lam Alp Zet Kap;Lam Gam Del Bet;Zet Eps Del",
+    "Pav=Alp Del Bet Eps Alp",
+    "Peg=Alp Bet Alp@And Gam Alp;Alp The Eps;Bet Mu Lam Iot",
+    "Per=Eta Gam Alp Del Eps Zet;Alp Bet Rho",
+    "Phe=Alp Bet Gam Del Zet Bet",
+    "Pic=Bet Gam Alp",
+    "Psc=Gam The Iot Lam Kap Gam;Alp Nu Mu Zet Eps Del Ome",
+    "PsA=Alp Eps Del Gam Bet",
+    "Pup=Zet Rho Pi Tau Nu",
+    "Pyx=Bet Alp Gam",
+    "Ret=Alp Bet Del Eps Alp",
+    "Sge=Gam Del Bet;Del Alp",
+    "Sgr=Gam2 Del Lam Phi Sig Tau Zet Eps Gam2;Del Eps",
+    "Sco=Pi Del Bet1;Del Sig Alp Tau;Alp Eps Mu1 Zet1 Eta The Iot1 Kap Lam;Lam Ups",
+    "Scl=Del Gam Bet Alp",
+    "Sct=Bet Alp Gam Del",
+    "Ser=Bet Gam Kap Alp Eps Del Gam",
+    "Sex=Gam Alp Bet;Alp Del",
+    "Tau=Zet Alp Gam Del1 Eps;Gam Lam",
+    "Tel=Alp Zet",
+    "Tri=Alp Bet Gam Alp",
+    "TrA=Alp Bet Gam Alp",
+    "Tuc=Alp Gam Zet Eps Alp",
+    "UMa=Alp Bet Gam Del Alp;Del Eps Zet Eta",
+    "UMi=Alp Del Eps Zet Eta Gam Bet Zet",
+    "Vel=Gam2 Lam Psi Mu Phi Kap Del Gam2",
+    "Vir=Bet Eta Gam Del Eps;Gam The Alp;Del Mu",
+    "Vol=Eps Del Gam Zet;Bet Del",
+    "Vul=Alp 13"};
+    static final int MAX = 5200, TARGET = 5000;   // capacity; N = stars currently loaded
     int N = CAT.length;
-    static final String BSC_URL = "https://vizier.cds.unistra.fr/viz-bin/asu-tsv?-source=V/50/catalog&-out=HR,Name,RAJ2000,DEJ2000,Vmag,pmRA,pmDE&Vmag=%3C4.2&-sort=Vmag&-out.max=800";
+    static final String BSC_URL = "https://vizier.cds.unistra.fr/viz-bin/asu-tsv?-source=V/50/catalog&-out=HR,Name,RAJ2000,DEJ2000,Vmag,pmRA,pmDE&Vmag=%3C6.6&-sort=Vmag&-out.max=9300";
     double[] pmra = new double[MAX], pmdec = new double[MAX]; boolean[] precise = new boolean[MAX], bsc = new boolean[MAX];
     String[] name = new String[MAX]; double[] ra = new double[MAX], dec = new double[MAX], mag = new double[MAX];
     double[] az = new double[MAX], alt = new double[MAX], off = new double[MAX];
@@ -81,17 +172,17 @@ public class MainActivity extends Activity {
     double lat = 40, lon = -75; String sel = null;
     EditText etLat, etLon; TextView info; Sky sky; SharedPreferences prefs;
     Handler h = new Handler();
-    boolean night = true; int cBg, cTx, cGrid, cMer, cLine, cStar, cLbl, cSel, cBtn;
-    TextView tvTime, tvAz, tvAlt, tvName; Button rec, nb; LinearLayout root;
+    boolean night = true; int cBg, cTx, cGrid, cMer, cLine, cStar, cLbl, cSel, cBtn, cAltLn, cAltTx; Button lockB; boolean locked;
+    TextView tvTime, tvAz, tvAlt, tvName, tvMer; Button rec, nb; LinearLayout root;
     void theme() {
         if (night) { cBg=Color.BLACK; cTx=Color.rgb(255,40,40); cGrid=Color.rgb(70,0,0); cMer=Color.rgb(255,60,60); cLine=Color.rgb(140,0,0);
-            cStar=Color.rgb(255,70,70); cLbl=Color.rgb(200,40,40); cSel=Color.rgb(255,130,130); cBtn=Color.rgb(60,0,0); }
+            cStar=Color.rgb(255,70,70); cLbl=Color.rgb(200,40,40); cSel=Color.rgb(255,130,130); cBtn=Color.rgb(60,0,0); cAltLn=Color.rgb(170,30,30); cAltTx=Color.rgb(255,100,100); }
         else { cBg=Color.BLACK; cTx=Color.WHITE; cGrid=Color.rgb(40,40,70); cMer=Color.YELLOW; cLine=Color.rgb(70,110,170);
-            cStar=Color.WHITE; cLbl=Color.rgb(255,220,160); cSel=Color.RED; cBtn=Color.rgb(68,68,68); }
+            cStar=Color.WHITE; cLbl=Color.rgb(255,220,160); cSel=Color.RED; cBtn=Color.rgb(68,68,68); cAltLn=Color.rgb(110,110,170); cAltTx=Color.rgb(200,200,255); }
         if (root == null) return;
         root.setBackgroundColor(cBg);
-        for (TextView t : new TextView[]{tvTime,tvAz,tvAlt,tvName,etLat,etLon,rec,nb}) { t.setTextColor(cTx); t.setHintTextColor(cGrid); }
-        rec.setBackgroundColor(cBtn); nb.setBackgroundColor(cBtn); nb.setText(night ? "Day" : "Night"); sky.invalidate();
+        for (TextView t : new TextView[]{tvTime,tvAz,tvAlt,tvName,tvMer,etLat,etLon,rec,nb,lockB}) { t.setTextColor(cTx); t.setHintTextColor(cGrid); }
+        rec.setBackgroundColor(cBtn); nb.setBackgroundColor(cBtn); lockB.setBackgroundColor(cBtn); nb.setText(night ? "Day" : "Night"); sky.invalidate();
     }
     static String dms(double deg) {
         boolean neg = deg < 0; long cs = Math.round(Math.abs(deg)*360000.0);
@@ -112,31 +203,59 @@ public class MainActivity extends Activity {
         for (String s : LINES.split(",")) { int d = s.indexOf('-'); // names never start with '-'
             Integer a = idx.get(s.substring(0,d)), c = idx.get(s.substring(d+1)); if (a!=null&&c!=null) segs.add(new int[]{a,c}); }
         prefs = getSharedPreferences("p", MODE_PRIVATE);
-        lat = prefs.getFloat("lat", 40f); lon = prefs.getFloat("lon", -75f);
+        lat = Double.parseDouble(prefs.getString("latS", "40")); lon = Double.parseDouble(prefs.getString("lonS", "-75"));
 
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         root = new LinearLayout(this); root.setOrientation(LinearLayout.VERTICAL);
-        LinearLayout row = new LinearLayout(this);
+        LinearLayout row = new LinearLayout(this), row2 = new LinearLayout(this);
         etLat = field("Lat", lat); etLon = field("Lon", lon);
-        rec = new Button(this); rec.setText("Record"); rec.setOnClickListener(v -> record());
-        nb = new Button(this); nb.setOnClickListener(v -> { night = !night; prefs.edit().putBoolean("night", night).apply(); theme(); });
+        rec = btn("Record"); rec.setOnClickListener(v -> record());
+        lockB = btn("Lock"); lockB.setOnClickListener(v -> setLocked(!locked));
+        nb = btn("Day"); nb.setOnClickListener(v -> { night = !night; prefs.edit().putBoolean("night", night).apply(); theme(); });
         night = prefs.getBoolean("night", true);
-        row.addView(etLat, new LinearLayout.LayoutParams(0, -2, 1)); row.addView(etLon, new LinearLayout.LayoutParams(0, -2, 1)); row.addView(rec); row.addView(nb);
-        tvTime = big(34); tvAz = big(30); tvAlt = big(30); tvName = big(16);
+        row.addView(etLat, new LinearLayout.LayoutParams(0, -2, 1)); row.addView(etLon, new LinearLayout.LayoutParams(0, -2, 1));
+        row2.addView(lockB, new LinearLayout.LayoutParams(0, -2, 1)); row2.addView(rec, new LinearLayout.LayoutParams(0, -2, 1.3f)); row2.addView(nb, new LinearLayout.LayoutParams(0, -2, 1));
+        tvTime = big(34); tvAz = big(30); tvAlt = big(30); tvName = big(16); tvMer = big(26);
         sky = new Sky(this);
-        root.addView(row); root.addView(tvTime); root.addView(tvName); root.addView(tvAz); root.addView(tvAlt);
+        root.addView(row); root.addView(row2); root.addView(tvTime); root.addView(tvName); root.addView(tvAz); root.addView(tvAlt); root.addView(tvMer);
         root.addView(sky, new LinearLayout.LayoutParams(-1, 0, 1));
         theme();
         setContentView(root);
         TextWatcher tw = new TextWatcher() {
-            public void beforeTextChanged(CharSequence s,int a,int b,int c){} public void onTextChanged(CharSequence s,int a,int b,int c){}
-            public void afterTextChanged(Editable e) { try { lat = Double.parseDouble(etLat.getText().toString()); lon = Double.parseDouble(etLon.getText().toString());
-                prefs.edit().putFloat("lat",(float)lat).putFloat("lon",(float)lon).apply(); } catch (Exception x) {} } };
+            public void beforeTextChanged(CharSequence q,int a,int b,int c){} public void onTextChanged(CharSequence q,int a,int b,int c){}
+            public void afterTextChanged(Editable e) { try { double la = Double.parseDouble(etLat.getText().toString()), lo = Double.parseDouble(etLon.getText().toString());
+                if (la >= -90 && la <= 90 && lo >= -180 && lo <= 180) { lat = la; lon = lo;
+                    prefs.edit().putString("latS", String.valueOf(la)).putString("lonS", String.valueOf(lo)).apply(); } } catch (Exception x) {} } };
+        TextView.OnEditorActionListener done = (v, a, ev) -> { setLocked(true); return true; };
+        etLat.setOnEditorActionListener(done); etLon.setOnEditorActionListener(done);
         etLat.addTextChangedListener(tw); etLon.addTextChangedListener(tw);
+        setLocked(prefs.getBoolean("locked", false));
         loadCatalog();
     }
-    TextView big(int sp) { TextView t = new TextView(this); t.setTextSize(sp); t.setTypeface(Typeface.MONOSPACE, Typeface.BOLD); t.setPadding(16,0,16,0); return t; }
+    Button btn(String t) { Button b = new Button(this); b.setText(t); b.setAllCaps(false); b.setTextSize(15); b.setMinHeight(0); b.setMinimumHeight(0); return b; }
+    void setLocked(boolean b) {
+        locked = b; prefs.edit().putBoolean("locked", b).apply();
+        etLat.setEnabled(!b); etLon.setEnabled(!b); lockB.setText(b ? "Unlock" : "Lock");
+        if (b) { View f = getCurrentFocus(); if (f != null) { f.clearFocus();
+            ((android.view.inputmethod.InputMethodManager) getSystemService(INPUT_METHOD_SERVICE)).hideSoftInputFromWindow(f.getWindowToken(), 0); } }
+        goFull();
+    }
+    void goFull() { getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_FULLSCREEN | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+        | View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION); }
+    @Override public void onWindowFocusChanged(boolean f) { super.onWindowFocusChanged(f); if (f) goFull(); }
+    void fit(TextView t, float maxSp) {          // shrink text so it always stays on one line
+        int w = t.getWidth() - t.getPaddingLeft() - t.getPaddingRight(); if (w <= 0) return;
+        float px = maxSp * getResources().getDisplayMetrics().scaledDensity;
+        Paint pt = new Paint(t.getPaint()); pt.setTextSize(px); float m = pt.measureText(t.getText().toString());
+        if (m > w) px *= w / m;
+        if (Math.abs(t.getTextSize() - px) > 0.5f) t.setTextSize(TypedValue.COMPLEX_UNIT_PX, px);
+    }
+    void vib() { try { Vibrator v = (Vibrator) getSystemService(VIBRATOR_SERVICE);
+        if (Build.VERSION.SDK_INT >= 26) v.vibrate(VibrationEffect.createOneShot(120, VibrationEffect.DEFAULT_AMPLITUDE)); else v.vibrate(120); } catch (Exception e) {} }
+    TextView big(int sp) { TextView t = new TextView(this); t.setTextSize(sp); t.setTypeface(Typeface.MONOSPACE, Typeface.BOLD); t.setPadding(16,0,16,0); t.setSingleLine(true); return t; }
     EditText field(String hint, double v) { EditText e = new EditText(this); e.setHint(hint); e.setText(String.valueOf(v));
         
+        e.setSingleLine(true); e.setImeOptions(android.view.inputmethod.EditorInfo.IME_ACTION_DONE);
         e.setInputType(InputType.TYPE_CLASS_NUMBER|InputType.TYPE_NUMBER_FLAG_DECIMAL|InputType.TYPE_NUMBER_FLAG_SIGNED); return e; }
 
     @Override protected void onResume() { super.onResume(); tick.run(); }
@@ -145,7 +264,7 @@ public class MainActivity extends Activity {
 
     // ---- Yale Bright Star Catalogue (J2000), downloaded once from VizieR and cached ----
     void loadCatalog() {
-        File cache = new File(getFilesDir(), "bsc.tsv");
+        File cache = new File(getFilesDir(), "bsc5000.tsv"); new File(getFilesDir(), "bsc.tsv").delete();
         if (cache.exists()) { try { applyBsc(readAll(new FileReader(cache))); return; } catch (Exception e) { cache.delete(); } }
         new Thread(() -> {
             try {
@@ -157,6 +276,13 @@ public class MainActivity extends Activity {
                     catch (Exception e) { Toast.makeText(this, "Catalog error: " + e.getMessage(), Toast.LENGTH_LONG).show(); } });
             } catch (Exception e) { runOnUiThread(() -> Toast.makeText(this, "Star download failed (internet needed once): " + e, Toast.LENGTH_LONG).show()); }
         }).start();
+    }
+    static void reg(String raw, int idx, HashMap<String,Integer> k) {     // BSC name -> "AlpOri" / "58Ori" keys
+        if (raw.length() < 3) return;
+        String cons = raw.substring(raw.length()-3), rest = raw.substring(0, raw.length()-3).trim(); int d = 0;
+        while (d < rest.length() && Character.isDigit(rest.charAt(d))) d++;
+        String fl = rest.substring(0, d), by = rest.substring(d).replaceAll("\\s", "");
+        if (!fl.isEmpty()) k.put(fl + cons, idx); if (!by.isEmpty()) k.put(by + cons, idx);
     }
     static String readAll(Reader r) throws IOException { BufferedReader b = new BufferedReader(r); StringBuilder sb = new StringBuilder(); String l;
         while ((l = b.readLine()) != null) sb.append(l).append('\n'); b.close(); return sb.toString(); }
@@ -173,27 +299,35 @@ public class MainActivity extends Activity {
                 else if (c.equals("Vmag")) iV=k; else if (c.equals("pmRA")) iPA=k; else if (c.equals("pmDE")) iPD=k; }
                 if (iHR<0||iN<0||iRA<0||iDE<0||iV<0||iPA<0||iPD<0) throw new Exception("unexpected columns"); continue; }
             if (!f[iHR].trim().matches("\\d+") || f[iV].trim().isEmpty()) continue;
-            rows.add(new Object[]{f[iHR].trim(), f[iN].trim().replaceAll("\\s+"," "), sex(f[iRA])*15, sex(f[iDE]), num(f[iV]), num(f[iPA])*1000, num(f[iPD])*1000});
+            rows.add(new Object[]{f[iHR].trim(), f[iN].trim().replaceAll("\\s+"," "), sex(f[iRA])*15, sex(f[iDE]), num(f[iV]), num(f[iPA])*1000, num(f[iPD])*1000, f[iN].trim()});
         }
         Collections.sort(rows, (a, b) -> Double.compare((double)a[4], (double)b[4]));
         HashSet<String> used = new HashSet<>(); for (int i = 0; i < N; i++) used.add(name[i]);
-        int added = 0, nOld = N;
+        int added = 0, nOld = N; HashMap<String,Integer> key = new HashMap<>();
         for (Object[] r : rows) {
             double rd = (double)r[2], dd = (double)r[3]; int m = -1;
             for (int j = 0; j < nOld && m < 0; j++) { double dr = (((ra[j]*15 - rd) + 540) % 360 - 180)*Math.cos(Math.toRadians(dd)), dn = dec[j]-dd;
                 if (Math.hypot(dr, dn) < 0.05) m = j; }
-            if (m >= 0) { if (!precise[m]) { ra[m]=rd/15; dec[m]=dd; pmra[m]=(double)r[5]; pmdec[m]=(double)r[6]; bsc[m]=true; } continue; }
-            if (added >= 250 || N >= MAX) continue;
+            if (m >= 0) { if (!precise[m]) { ra[m]=rd/15; dec[m]=dd; pmra[m]=(double)r[5]; pmdec[m]=(double)r[6]; bsc[m]=true; } reg((String) r[7], m, key); continue; }
+            if (N >= TARGET) continue;
             String n = ((String) r[1]).isEmpty() ? "HR" + r[0] : (String) r[1]; if (!used.add(n)) { n += " #" + r[0]; used.add(n); }
-            name[N]=n; ra[N]=rd/15; dec[N]=dd; mag[N]=(double)r[4]; pmra[N]=(double)r[5]; pmdec[N]=(double)r[6]; bsc[N]=true; N++; added++;
+            name[N]=n; ra[N]=rd/15; dec[N]=dd; mag[N]=(double)r[4]; pmra[N]=(double)r[5]; pmdec[N]=(double)r[6]; bsc[N]=true; reg((String) r[7], N, key); N++; added++;
         }
-        return added;
+        List<int[]> ns = new ArrayList<>();
+        for (String c : CONS) { int e = c.indexOf('='); String cc = c.substring(0, e);
+            for (String ch : c.substring(e+1).split(";")) { int prev = -1;
+                for (String t : ch.trim().split(" ")) { Integer ix = key.get(t.contains("@") ? t.replace("@", "") : t + cc);
+                    if (ix == null) { prev = -1; continue; } if (prev >= 0 && prev != ix) ns.add(new int[]{prev, ix}); prev = ix; } } }
+        if (ns.size() > 100) { segs.clear(); segs.addAll(ns); }
+        appT = 0; return added;
     }
     static double R(double deg) { return Math.toRadians(deg); }
     /** Apparent topocentric place: proper motion, IAU76 precession, IAU80 nutation (main terms),
      *  full annual aberration, sidereal time w/ equation of equinoxes, Saemundsson refraction. */
+    double[] aApp = new double[MAX], dApp = new double[MAX], sD = new double[MAX], cD = new double[MAX]; long appT = 0; int appN = -1; double lstNow;
     void compute() {
-        double jdUT = System.currentTimeMillis()/86400000.0 + 2440587.5, jdTT = jdUT + 69.184/86400.0;
+        long ms = System.currentTimeMillis();
+        double jdUT = ms/86400000.0 + 2440587.5, jdTT = jdUT + 69.184/86400.0;
         double T = (jdTT-2451545.0)/36525.0, yrs = T*100;
         double Om = R(125.04452-1934.136261*T), Ls = R(280.4665+36000.7698*T), Lm = R(218.3165+481267.8813*T);
         double dpsi = R((-17.20*Math.sin(Om)-1.32*Math.sin(2*Ls)-0.23*Math.sin(2*Lm)+0.21*Math.sin(2*Om))/3600.0);
@@ -201,46 +335,61 @@ public class MainActivity extends Activity {
         double eps = R((84381.448-46.8150*T-0.00059*T*T+0.001813*T*T*T)/3600.0) + deps, ce = Math.cos(eps), se = Math.sin(eps);
         double d = jdUT-2451545.0, Tu = d/36525.0;
         double gmst = 280.46061837 + 360.98564736629*d + 0.000387933*Tu*Tu - Tu*Tu*Tu/38710000.0;
-        double lst = R(gmst + lon) + dpsi*ce;
-        double p = R(lat), sp = Math.sin(p), cp = Math.cos(p);
-        double as = 1.0/206264.806247;
-        double zeta = (2306.2181*T+0.30188*T*T+0.017998*T*T*T)*as, zz = (2306.2181*T+1.09468*T*T+0.018203*T*T*T)*as,
-               th = (2004.3109*T-0.42665*T*T-0.041833*T*T*T)*as;
-        // aberration geometry
-        double M = R(357.52911+35999.05029*T), C = (1.914602-0.004817*T)*Math.sin(M)+0.019993*Math.sin(2*M)+0.000289*Math.sin(3*M);
-        double sunL = R(280.46646+36000.76983*T+C), ecc = 0.016708634-0.000042037*T, per = R(102.93735+1.71946*T), kap = 20.49552*as;
-        double mer = lat >= 0 ? 180 : 0;
-        for (int i = 0; i < N; i++) {
-            double a0 = R(ra[i]*15), d0 = R(dec[i]);
-            a0 += pmra[i]/1000.0*as/Math.cos(d0)*yrs; d0 += pmdec[i]/1000.0*as*yrs;       // proper motion
-            double A = Math.cos(d0)*Math.sin(a0+zeta), B = Math.cos(th)*Math.cos(d0)*Math.cos(a0+zeta)-Math.sin(th)*Math.sin(d0),
-                   Cc = Math.sin(th)*Math.cos(d0)*Math.cos(a0+zeta)+Math.cos(th)*Math.sin(d0);
-            double a = Math.atan2(A, B) + zz, dd = Math.asin(Cc);                           // precession
-            double ta = Math.tan(dd), sa = Math.sin(a), ca = Math.cos(a);
-            double da = (ce+se*sa*ta)*dpsi - ca*ta*deps, dn = se*ca*dpsi + sa*deps;        // nutation
-            a += da; dd += dn; sa = Math.sin(a); ca = Math.cos(a); double sd = Math.sin(dd), cd = Math.cos(dd);
-            for (int k = 0; k < 2; k++) {                                                    // aberration
-                double lam = k == 0 ? sunL : per, f = k == 0 ? -kap : ecc*kap;
-                a += f*(ca*Math.cos(lam)*ce + sa*Math.sin(lam))/cd;
-                dd += f*(Math.cos(lam)*ce*(se/ce*cd - sa*sd) + ca*sd*Math.sin(lam));
+        double lst = R(gmst + lon) + dpsi*ce, p = R(lat), sp = Math.sin(p), cp = Math.cos(p), as = 1.0/206264.806247;
+        lstNow = lst;
+        if (ms - appT > 5000 || appN != N) {            // apparent places change slowly: refresh every 5 s
+            appT = ms; appN = N;
+            double zeta = (2306.2181*T+0.30188*T*T+0.017998*T*T*T)*as, zz = (2306.2181*T+1.09468*T*T+0.018203*T*T*T)*as,
+                   th = (2004.3109*T-0.42665*T*T-0.041833*T*T*T)*as;
+            double M = R(357.52911+35999.05029*T), C = (1.914602-0.004817*T)*Math.sin(M)+0.019993*Math.sin(2*M)+0.000289*Math.sin(3*M);
+            double sunL = R(280.46646+36000.76983*T+C), ecc = 0.016708634-0.000042037*T, per = R(102.93735+1.71946*T), kap = 20.49552*as;
+            for (int i = 0; i < N; i++) {
+                double a0 = R(ra[i]*15), d0 = R(dec[i]);
+                a0 += pmra[i]/1000.0*as/Math.cos(d0)*yrs; d0 += pmdec[i]/1000.0*as*yrs;
+                double A = Math.cos(d0)*Math.sin(a0+zeta), B = Math.cos(th)*Math.cos(d0)*Math.cos(a0+zeta)-Math.sin(th)*Math.sin(d0),
+                       Cc = Math.sin(th)*Math.cos(d0)*Math.cos(a0+zeta)+Math.cos(th)*Math.sin(d0);
+                double a = Math.atan2(A, B) + zz, dd = Math.asin(Cc);
+                double ta = Math.tan(dd), sa = Math.sin(a), ca = Math.cos(a);
+                a += (ce+se*sa*ta)*dpsi - ca*ta*deps; dd += se*ca*dpsi + sa*deps;
+                sa = Math.sin(a); ca = Math.cos(a); double sd = Math.sin(dd), cd = Math.cos(dd);
+                for (int k = 0; k < 2; k++) {
+                    double lam = k == 0 ? sunL : per, f = k == 0 ? -kap : ecc*kap;
+                    a += f*(ca*Math.cos(lam)*ce + sa*Math.sin(lam))/cd;
+                    dd += f*(Math.cos(lam)*ce*(se/ce*cd - sa*sd) + ca*sd*Math.sin(lam));
+                }
+                aApp[i] = a; dApp[i] = dd; sD[i] = Math.sin(dd); cD[i] = Math.cos(dd);
             }
-            double H = lst - a; sd = Math.sin(dd); cd = Math.cos(dd);
-            double h = Math.toDegrees(Math.asin(sd*sp + cd*cp*Math.cos(H)));
-            az[i] = (Math.toDegrees(Math.atan2(Math.sin(H), Math.cos(H)*sp - sd/cd*cp)) + 180 + 360) % 360;
-            if (h > -1) h += 1.02/Math.tan(R(h+10.3/(h+5.11)))/60.0;                         // refraction, 1010 hPa 10 C
+        }
+        double mer = 0;                    // chart faces north
+        for (int i = 0; i < N; i++) {
+            double H = lst - aApp[i], cH = Math.cos(H);
+            double h = Math.toDegrees(Math.asin(sD[i]*sp + cD[i]*cp*cH));
+            az[i] = (Math.toDegrees(Math.atan2(Math.sin(H), cH*sp - sD[i]/cD[i]*cp)) + 180 + 360) % 360;
+            if (h > -1) h += 1.02/Math.tan(R(h+10.3/(h+5.11)))/60.0;
             alt[i] = h; off[i] = ((az[i] - mer + 540) % 360) - 180;
         }
+    }
+    /** Time until the star next crosses the drawn (north) meridian; falls back to the south half if it never crosses the north half. */
+    String merText(int i) {
+        double TP = 2*Math.PI, H = lstNow - aApp[i], w = R(360.98564736629)/86400.0;
+        double t0 = (((-H) % TP) + TP) % TP / w, t1 = (((Math.PI - H) % TP) + TP) % TP / w;     // HA = 0 (upper), HA = 12h (lower)
+        boolean n0 = dApp[i] > R(lat), n1 = lat > 0;                                          // which of them lies on the north half
+        boolean up = (n0 && n1) ? t0 <= t1 : n0 ? true : n1 ? false : t0 <= t1;
+        double t = up ? t0 : t1; boolean north = up ? n0 : n1;
+        double hc = up ? 0 : Math.PI, al = Math.toDegrees(Math.asin(sD[i]*Math.sin(R(lat)) + cD[i]*Math.cos(R(lat))*Math.cos(hc)));
+        long ten = Math.round(t*10);
+        return String.format(Locale.US, "Mer %02d:%02d:%04.1f %s%s %.1f°", ten/36000, (ten/600)%60, (ten%600)/10.0, north ? "N " : "S ", up ? "upper" : "lower", al);
     }
     boolean vis(int i) { return alt[i] >= 12 && alt[i] <= 42 && Math.abs(off[i]) <= 15; }
     int selIdx() { if (sel == null) return -1; for (int i = 0; i < N; i++) if (name[i].equals(sel)) return i; return -1; }
     void updateInfo() {
         long now = System.currentTimeMillis(); Calendar c = Calendar.getInstance(); c.setTimeInMillis(now);
-        int cs = (int)((now % 1000) / 10);
-        tvTime.setText(String.format(Locale.US, "%02d:%02d:%02d.%02d", c.get(Calendar.HOUR_OF_DAY), c.get(Calendar.MINUTE), c.get(Calendar.SECOND), cs));
+        tvTime.setText(String.format(Locale.US, "%02d:%02d:%02d.%02d", c.get(Calendar.HOUR_OF_DAY), c.get(Calendar.MINUTE), c.get(Calendar.SECOND), (int)((now % 1000) / 10)));
         int i = selIdx();
-        if (i < 0) { tvName.setText("Tap a star"); tvAz.setText("Az  --"); tvAlt.setText("Alt --"); return; }
-        tvName.setText(String.format(Locale.US, "%s  mag %.2f  catalog %s%s", name[i], mag[i], precise[i] ? "±0.1\"" : bsc[i] ? "±1\" (BSC)" : "±1\u2032 approx", vis(i) ? "" : "  (outside window)"));
-        tvAz.setText("Az  " + dms(az[i])); tvAlt.setText("Alt " + dms(alt[i]));
+        if (i < 0) { tvName.setText("Tap a star"); tvAz.setText("Az  --"); tvAlt.setText("Alt --"); tvMer.setText("Mer --"); }
+        else { tvName.setText(String.format(Locale.US, "%s  mag %.2f  %s%s", name[i], mag[i], precise[i] ? "±0.1\"" : bsc[i] ? "±1\" (BSC)" : "±1\u2032 approx", vis(i) ? "" : "  (outside window)"));
+            tvAz.setText("Az  " + dms(az[i])); tvAlt.setText("Alt " + dms(alt[i])); tvMer.setText(merText(i)); }
+        fit(tvTime, 34); fit(tvName, 16); fit(tvAz, 30); fit(tvAlt, 30); fit(tvMer, 26);
     }
     void record() {
         try {
@@ -252,7 +401,7 @@ public class MainActivity extends Activity {
             for (int i = 0; i < N; i++) if (s >= 0 ? i == s : vis(i)) {
                 w.write(String.format(Locale.US, "%s,%.5f,%.5f,%s,%.2f,%.3f,%.3f\n", ts, lat, lon, name[i], mag[i], az[i], alt[i])); n++; }
             w.close();
-            Toast.makeText(this, "Saved " + n + " rows to\n" + f.getAbsolutePath(), Toast.LENGTH_LONG).show();
+            vib(); Toast.makeText(this, "Saved " + n + " rows to\n" + f.getAbsolutePath(), Toast.LENGTH_LONG).show();
         } catch (Exception e) { Toast.makeText(this, "Error: " + e.getMessage(), Toast.LENGTH_LONG).show(); }
     }
 
@@ -282,17 +431,19 @@ public class MainActivity extends Activity {
             lay(); clamp(); c.drawColor(cBg); p.setTextSize(base*0.7f); p.setStyle(Paint.Style.FILL);
             int st = zoom < 3 ? 5 : 1; float ts = p.getTextSize();
             p.setStrokeWidth(1);
-            for (int a = 12; a <= 42; a++) if (a % st == 0) { p.setColor(cGrid); c.drawLine(X(-15),Y(a),X(15),Y(a),p); c.drawText(a+"°",4,Y(a)-3,p); }
+            for (int a = 12; a <= 42; a++) if (a % st == 0) { p.setColor(cAltLn); p.setStrokeWidth(2); c.drawLine(X(-15),Y(a),X(15),Y(a),p);
+                p.setColor(cAltTx); p.setTextSize(base*0.9f); p.setFakeBoldText(true); String t = a+"°"; c.drawText(t,4,Y(a)-4,p); c.drawText(t,getWidth()-4-p.measureText(t),Y(a)-4,p);
+                p.setFakeBoldText(false); p.setTextSize(base*0.7f); p.setStrokeWidth(1); }
             for (int o = -15; o <= 15; o++) if (o % st == 0 && o != 0) { p.setColor(cGrid); c.drawLine(X(o),Y(42),X(o),Y(12),p); c.drawText((o>0?"+":"")+o+"°",X(o)+3,ts+2,p); }
             p.setColor(cMer); p.setStrokeWidth(3); c.drawLine(X(0),Y(42),X(0),Y(12),p);
-            p.setStrokeWidth(1); c.drawText("Meridian", X(0)+6, 2.4f*ts, p);
+            p.setStrokeWidth(1); c.drawText("N Meridian", X(0)+6, 2.4f*ts, p);
             c.save(); c.clipRect(X(-15), Y(42), X(15), Y(12));
             p.setColor(cLine); p.setStrokeWidth(2);
             for (int[] g : segs) if (Math.abs(off[g[0]]-off[g[1]]) < 90) c.drawLine(X(off[g[0]]),Y(alt[g[0]]),X(off[g[1]]),Y(alt[g[1]]),p);
             int si = selIdx();
             for (int i = 0; i < N; i++) {
                 float x = X(off[i]), y = Y(alt[i]); if (x<-50||x>getWidth()+50||y<-50||y>getHeight()+50) continue;
-                float r = Math.max(2.5f, (4.2f - (float)mag[i])*base*0.22f);
+                float r = Math.max(1.2f, (5.2f - (float)mag[i])*base*0.2f);
                 p.setColor(cStar); p.setStyle(Paint.Style.FILL); c.drawCircle(x, y, r, p);
                 if (mag[i] < 2.6) { p.setColor(cLbl); c.drawText(name[i], x + r + 4, y - r, p); }
                 if (i == si) { p.setColor(cSel); p.setStyle(Paint.Style.STROKE); p.setStrokeWidth(3); c.drawCircle(x, y, r + 10, p); p.setStyle(Paint.Style.FILL); }
