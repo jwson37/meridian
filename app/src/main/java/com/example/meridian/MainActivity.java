@@ -316,7 +316,7 @@ public class MainActivity extends Activity {
         List<int[]> ns = new ArrayList<>();
         for (String c : CONS) { int e = c.indexOf('='); String cc = c.substring(0, e);
             for (String ch : c.substring(e+1).split(";")) { int prev = -1;
-                for (String t : ch.trim().split(" ")) { Integer ix = key.get(t.contains("@") ? t.replace("@", "") : t + cc);
+                for (String star : ch.trim().split(" ")) { Integer ix = key.get(star.contains("@") ? star.replace("@", "") : star + cc);
                     if (ix == null) { prev = -1; continue; } if (prev >= 0 && prev != ix) ns.add(new int[]{prev, ix}); prev = ix; } } }
         if (ns.size() > 100) { segs.clear(); segs.addAll(ns); }
         appT = 0; return added;
