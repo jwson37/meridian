@@ -174,16 +174,16 @@ public class MainActivity extends Activity {
     EditText etLat, etLon; TextView info; Sky sky; SharedPreferences prefs;
     Handler h = new Handler();
     boolean night = true; int cBg, cTx, cGrid, cMer, cLine, cStar, cLbl, cSel, cBtn, cAltLn, cAltTx; Button lockB, syncB; boolean locked;
-    TextView tvTime, tvAz, tvAlt, tvName, tvMer; Button rec, nb; LinearLayout root;
+    TextView tvTime, tvAz, tvAlt, tvZen, tvName, tvMer, tvHint, tvGeo1, tvGeo2, tvGeo3; LinearLayout page2; Pager pg; Button clrB; int curPage; List<TextView> extra = new ArrayList<>(); double azRef = Double.NaN; int cFalse; Button rec, nb; LinearLayout root;
     void theme() {
         if (night) { cBg=Color.BLACK; cTx=Color.rgb(255,40,40); cGrid=Color.rgb(70,0,0); cMer=Color.rgb(255,60,60); cLine=Color.rgb(140,0,0);
-            cStar=Color.rgb(255,70,70); cLbl=Color.rgb(200,40,40); cSel=Color.rgb(255,130,130); cBtn=Color.rgb(60,0,0); cAltLn=Color.rgb(170,30,30); cAltTx=Color.rgb(255,100,100); }
+            cStar=Color.rgb(255,70,70); cLbl=Color.rgb(200,40,40); cSel=Color.rgb(255,130,130); cBtn=Color.rgb(60,0,0); cAltLn=Color.rgb(170,30,30); cAltTx=Color.rgb(255,100,100); cFalse=Color.rgb(255,175,175); }
         else { cBg=Color.BLACK; cTx=Color.WHITE; cGrid=Color.rgb(40,40,70); cMer=Color.YELLOW; cLine=Color.rgb(70,110,170);
-            cStar=Color.WHITE; cLbl=Color.rgb(255,220,160); cSel=Color.RED; cBtn=Color.rgb(68,68,68); cAltLn=Color.rgb(110,110,170); cAltTx=Color.rgb(200,200,255); }
+            cStar=Color.WHITE; cLbl=Color.rgb(255,220,160); cSel=Color.RED; cBtn=Color.rgb(68,68,68); cAltLn=Color.rgb(110,110,170); cAltTx=Color.rgb(200,200,255); cFalse=Color.rgb(0,220,255); }
         if (root == null) return;
-        root.setBackgroundColor(cBg);
-        for (TextView t : new TextView[]{tvTime,tvAz,tvAlt,tvName,tvMer,etLat,etLon,etElev,etTemp,etPress,rec,nb,lockB,syncB}) { t.setTextColor(cTx); t.setHintTextColor(cGrid); }
-        rec.setBackgroundColor(cBtn); nb.setBackgroundColor(cBtn); lockB.setBackgroundColor(cBtn); syncB.setBackgroundColor(cBtn); nb.setText(night ? "Day" : "Night"); sky.invalidate();
+        root.setBackgroundColor(cBg); page2.setBackgroundColor(cBg); pg.setBackgroundColor(cBg); for (TextView x : extra) x.setTextColor(cTx);
+        for (TextView t : new TextView[]{tvTime,tvAz,tvAlt,tvZen,tvHint,tvGeo1,tvGeo2,tvGeo3,clrB,tvName,tvMer,etLat,etLon,etElev,etTemp,etPress,rec,nb,lockB,syncB}) { t.setTextColor(cTx); t.setHintTextColor(cGrid); }
+        rec.setBackgroundColor(cBtn); nb.setBackgroundColor(cBtn); lockB.setBackgroundColor(cBtn); syncB.setBackgroundColor(cBtn); clrB.setBackgroundColor(cBtn); nb.setText(night ? "Day" : "Night"); sky.invalidate();
     }
     static String dms(double deg) {
         boolean neg = deg < 0; long cs = Math.round(Math.abs(deg)*360000.0);
@@ -209,24 +209,42 @@ public class MainActivity extends Activity {
         String psv = prefs.getString("pressInS", ""); pressHpa = psv.isEmpty() ? Double.NaN : Double.parseDouble(psv)*33.8639;   // field is inHg
 
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-        root = new LinearLayout(this); root.setOrientation(LinearLayout.VERTICAL);
-        LinearLayout row = new LinearLayout(this), row2 = new LinearLayout(this), row3 = new LinearLayout(this);
+        night = prefs.getBoolean("night", true);
         etLat = field("Lat", lat); etLon = field("Lon", lon);
-        etElev = field("Elev m", elev); etTemp = field("Temp F", tempF); etPress = field("inHg auto", 0); etPress.setText(psv);
+        etElev = field("Elev", elev); etTemp = field("Temp", tempF); etPress = field("inHg auto", 0); etPress.setText(psv);
+        for (EditText ed : new EditText[]{etLat, etLon, etElev, etTemp, etPress}) ed.setTextSize(22);
         rec = btn("Record"); rec.setOnClickListener(v -> record());
         lockB = btn("Lock"); lockB.setOnClickListener(v -> setLocked(!locked));
         syncB = btn("Sync"); syncB.setOnClickListener(v -> syncTime());
         nb = btn("Day"); nb.setOnClickListener(v -> { night = !night; prefs.edit().putBoolean("night", night).apply(); theme(); });
-        night = prefs.getBoolean("night", true);
-        row.addView(etLat, new LinearLayout.LayoutParams(0, -2, 1)); row.addView(etLon, new LinearLayout.LayoutParams(0, -2, 1));
-        row3.addView(etElev, new LinearLayout.LayoutParams(0, -2, 1)); row3.addView(etTemp, new LinearLayout.LayoutParams(0, -2, 1)); row3.addView(etPress, new LinearLayout.LayoutParams(0, -2, 1));
-        row2.addView(lockB, new LinearLayout.LayoutParams(0, -2, 1)); row2.addView(syncB, new LinearLayout.LayoutParams(0, -2, 1.5f)); row2.addView(rec, new LinearLayout.LayoutParams(0, -2, 1.3f)); row2.addView(nb, new LinearLayout.LayoutParams(0, -2, 1));
-        tvTime = big(34); tvAz = big(30); tvAlt = big(30); tvName = big(16); tvMer = big(26);
+        clrB = btn("Clear zero"); clrB.setOnClickListener(v -> { azRef = Double.NaN; sky.cO = 0; sky.invalidate(); Toast.makeText(this, "Azimuth zero cleared (true north)", Toast.LENGTH_SHORT).show(); });
+        tvTime = big(28); tvAz = big(30); tvAlt = big(30); tvZen = big(30); tvName = big(16); tvMer = big(26); tvHint = big(11); tvGeo1 = big(16); tvGeo2 = big(16); tvGeo3 = big(16); tvGeo1.setPadding(14, 28, 14, 0);
+        tvHint.setText("tap here = Record     swipe left = inputs >");
         sky = new Sky(this);
-        root.addView(row); root.addView(row3); root.addView(row2); root.addView(tvTime); root.addView(tvName); root.addView(tvAz); root.addView(tvAlt); root.addView(tvMer);
-        root.addView(sky, new LinearLayout.LayoutParams(-1, 0, 1));
+        // screen 1: readouts + chart (tap anywhere on the readouts = Record)
+        root = new LinearLayout(this); root.setOrientation(LinearLayout.VERTICAL);
+        LinearLayout top = new LinearLayout(this); top.setOrientation(LinearLayout.VERTICAL); top.setClickable(true); top.setOnClickListener(v -> record());
+        top.addView(tvTime); top.addView(tvName); top.addView(tvAz); top.addView(tvZen); top.addView(tvMer); top.addView(tvHint);
+        root.addView(top); root.addView(sky, new LinearLayout.LayoutParams(-1, 0, 1));
+        // screen 2: inputs + buttons
+        page2 = new LinearLayout(this); page2.setOrientation(LinearLayout.VERTICAL); page2.setPadding(12, 40, 12, 12);
+        page2.addView(pair(etLat, lbl("\u00b0 lat"))); page2.addView(pair(etLon, lbl("\u00b0 lon"))); page2.addView(pair(etElev, lbl("m")));
+        page2.addView(pair(etTemp, lbl("\u00b0F"))); page2.addView(pair(etPress, lbl("inHg")));
+        LinearLayout b1 = new LinearLayout(this), b2 = new LinearLayout(this);
+        b1.addView(lockB, new LinearLayout.LayoutParams(0, -2, 1)); b1.addView(syncB, new LinearLayout.LayoutParams(0, -2, 1.5f)); b1.addView(nb, new LinearLayout.LayoutParams(0, -2, 1));
+        b2.addView(rec, new LinearLayout.LayoutParams(0, -2, 1)); b2.addView(clrB, new LinearLayout.LayoutParams(0, -2, 1));
+        page2.addView(b1); page2.addView(b2); page2.addView(tvGeo1); page2.addView(tvGeo3); page2.addView(tvGeo2);
+        TextView back = lbl("< swipe right to return"); back.setTextSize(13); page2.addView(back);
+        int W = getResources().getDisplayMetrics().widthPixels;
+        LinearLayout holder = new LinearLayout(this);
+        holder.addView(root, new LinearLayout.LayoutParams(W, -1)); holder.addView(page2, new LinearLayout.LayoutParams(W, -1));
+        pg = new Pager(this); pg.setHorizontalScrollBarEnabled(false); pg.addView(holder, new FrameLayout.LayoutParams(-2, -1));
+        pg.setOnTouchListener((v, ev) -> { int act = ev.getAction();
+            if (act == MotionEvent.ACTION_UP || act == MotionEvent.ACTION_CANCEL) { pg.post(() -> { int w = pg.getWidth(); double pos = pg.getScrollX() / (double) w;
+                curPage = curPage == 0 ? (pos > 0.25 ? 1 : 0) : (pos < 0.75 ? 0 : 1); pg.smoothScrollTo(curPage * w, 0); }); }
+            return false; });
         theme();
-        setContentView(root);
+        setContentView(pg);
         TextWatcher tw = new TextWatcher() {
             public void beforeTextChanged(CharSequence q,int a,int b,int c){} public void onTextChanged(CharSequence q,int a,int b,int c){}
             public void afterTextChanged(Editable e) { try { double la = Double.parseDouble(etLat.getText().toString()), lo = Double.parseDouble(etLon.getText().toString());
@@ -263,8 +281,23 @@ public class MainActivity extends Activity {
         if (m > w) px *= w / m;
         if (Math.abs(t.getTextSize() - px) > 0.5f) t.setTextSize(TypedValue.COMPLEX_UNIT_PX, px);
     }
+    /** Length of 1 degree of latitude and Earth's surface rotation speed at the entered latitude/elevation (WGS84). */
+    void updateGeo() {
+        double phi = R(lat), s2 = Math.pow(Math.sin(phi), 2), e2 = 0.00669437999014, a = 6378137.0, w = Math.sqrt(1 - e2*s2);
+        double M = a*(1 - e2)/(w*w*w), Nr = a/w;                         // meridional and prime-vertical radii of curvature
+        double ft = (M + elev)*Math.PI/180.0/0.3048;                      // feet per degree of latitude
+        double v = 7.2921150e-5*(Nr + elev)*Math.cos(phi)/0.3048;         // ft/s from Earth's rotation (sidereal rate)
+        tvGeo1.setText(String.format(Locale.US, "1\u00b0 lat = %,.0f ft = %.3f mi", ft, ft/5280.0));
+        double ftLon = (Nr + elev)*Math.cos(phi)*Math.PI/180.0/0.3048;     // feet per degree of longitude at this latitude
+        tvGeo3.setText(String.format(Locale.US, "1\u00b0 lon = %,.0f ft = %.3f mi", ftLon, ftLon/5280.0));
+        tvGeo2.setText(String.format(Locale.US, "Earth spin: %.1f ft/s = %.1f mph", v, v*3600.0/5280.0));
+        fit(tvGeo1, 16); fit(tvGeo3, 16); fit(tvGeo2, 16);
+    }
     void vib() { try { Vibrator v = (Vibrator) getSystemService(VIBRATOR_SERVICE);
         if (Build.VERSION.SDK_INT >= 26) v.vibrate(VibrationEffect.createOneShot(120, VibrationEffect.DEFAULT_AMPLITUDE)); else v.vibrate(120); } catch (Exception e) {} }
+    TextView lbl(String t) { TextView x = new TextView(this); x.setText(t); x.setTextSize(18); x.setPadding(14, 0, 0, 0); extra.add(x); return x; }
+    LinearLayout pair(View a, TextView l) { LinearLayout r = new LinearLayout(this); r.setGravity(Gravity.CENTER_VERTICAL); r.setPadding(0, 8, 0, 8);
+        r.addView(a, new LinearLayout.LayoutParams(0, -2, 1)); r.addView(l, new LinearLayout.LayoutParams(170, -2)); return r; }
     TextView big(int sp) { TextView t = new TextView(this); t.setTextSize(sp); t.setTypeface(Typeface.MONOSPACE, Typeface.BOLD); t.setPadding(16,0,16,0); t.setSingleLine(true); return t; }
     EditText field(String hint, double v) { EditText e = new EditText(this); e.setHint(hint); e.setText(String.valueOf(v));
         
@@ -379,7 +412,7 @@ public class MainActivity extends Activity {
                 aApp[i] = a; dApp[i] = dd; sD[i] = Math.sin(dd); cD[i] = Math.cos(dd);
             }
         }
-        double mer = 0, rf = refFactor();   // chart faces north; refraction scale for pressure/temperature
+        double mer = Double.isNaN(azRef) ? 0 : azRef, rf = refFactor();   // chart faces north; refraction scale for pressure/temperature
         for (int i = 0; i < N; i++) {
             double H = lst - aApp[i], cH = Math.cos(H);
             double h = Math.toDegrees(Math.asin(sD[i]*sp + cD[i]*cp*cH));
@@ -429,16 +462,16 @@ public class MainActivity extends Activity {
         long ten = Math.round(t*10);
         return String.format(Locale.US, "Mer %02d:%02d:%04.1f %s%s %.1f°", ten/36000, (ten/600)%60, (ten%600)/10.0, north ? "N " : "S ", up ? "upper" : "lower", al);
     }
-    boolean vis(int i) { return alt[i] >= 12 && alt[i] <= 42; }     // chart now spans all 360 deg of azimuth
+    boolean vis(int i) { return alt[i] >= 5 && alt[i] <= 55; }     // chart now spans all 360 deg of azimuth
     int selIdx() { if (sel == null) return -1; for (int i = 0; i < N; i++) if (name[i].equals(sel)) return i; return -1; }
     void updateInfo() {
         long now = now(); Calendar c = Calendar.getInstance(); c.setTimeInMillis(now);
-        tvTime.setText(String.format(Locale.US, "%02d:%02d:%02d.%02d", c.get(Calendar.HOUR_OF_DAY), c.get(Calendar.MINUTE), c.get(Calendar.SECOND), (int)((now % 1000) / 10)));
+        tvTime.setText(String.format(Locale.US, "Time %02d:%02d:%02d.%02d", c.get(Calendar.HOUR_OF_DAY), c.get(Calendar.MINUTE), c.get(Calendar.SECOND), (int)((now % 1000) / 10)));
         int i = selIdx();
-        if (i < 0) { tvName.setText("Tap a star"); tvAz.setText("Az  --"); tvAlt.setText("Alt --"); tvMer.setText("Mer --"); }
+        if (i < 0) { tvName.setText("Tap a star"); tvAz.setText("Az   --"); tvAlt.setText("Alt  --"); tvZen.setText("90-Alt --"); tvMer.setText("Mer --"); }
         else { tvName.setText(String.format(Locale.US, "%s  mag %.2f  %s%s", name[i], mag[i], precise[i] ? "±0.1\"" : bsc[i] ? "±1\" (BSC)" : "±1\u2032 approx", vis(i) ? "" : "  (outside window)"));
-            tvAz.setText("Az  " + dms(az[i])); tvAlt.setText("Alt " + dms(alt[i])); tvMer.setText(merText(i)); }
-        fit(tvTime, 34); fit(tvName, 16); fit(tvAz, 30); fit(tvAlt, 30); fit(tvMer, 26);
+            tvAz.setText(Double.isNaN(azRef) ? "Az   " + dms(az[i]) : "rAz  " + dms(off[i])); tvAlt.setText("Alt  " + dms(alt[i])); tvZen.setText("90-Alt " + dms(90 - alt[i])); tvMer.setText(merText(i)); }
+        fit(tvTime, 28); fit(tvZen, 30); fit(tvName, 16); fit(tvAz, 30); fit(tvAlt, 30); fit(tvMer, 26); updateGeo();
         if (now - hintT > 1000) { hintT = now; etPress.setHint(String.format(Locale.US, "%.2f %s", usedPressure()/33.8639, !Double.isNaN(pressHpa) ? "set" : !Double.isNaN(baroHpa) ? "baro" : "est")); }
     }
     static String dms3(double deg) {          // plain "D M S.sss" for spreadsheets
@@ -449,72 +482,83 @@ public class MainActivity extends Activity {
         try {
             compute();                                   // refresh so az/alt match the timestamp exactly
             long ms = lastMs; Date dt = new Date(ms);
-            File f = new File(getExternalFilesDir(null), "star_log4.csv"); boolean nw = !f.exists();
+            File f = new File(getExternalFilesDir(null), "star_log5.csv"); boolean nw = !f.exists();
             FileWriter w = new FileWriter(f, true);
-            if (nw) w.write("utc,local,unix_s,lat_deg,lon_deg,star,mag,az_deg,alt_deg,az_dms,alt_dms,elev_m,temp_F,press_hPa,time_src,clock_err_ms\n");
+            if (nw) w.write("utc,local,unix_s,lat_deg,lon_deg,star,mag,az_deg,alt_deg,zen_deg,az_dms,alt_dms,az_rel_prev_zero_deg,elev_m,temp_F,press_hPa,time_src,clock_err_ms\n");
             SimpleDateFormat u = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US); u.setTimeZone(TimeZone.getTimeZone("UTC"));
             SimpleDateFormat l = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS Z", Locale.US);
             int n = 0, sIdx = selIdx();
             for (int i = 0; i < N; i++) if (sIdx >= 0 ? i == sIdx : sky.onScreen(i)) {
-                w.write(String.format(Locale.US, "%s,%s,%.3f,%.8f,%.8f,\"%s\",%.2f,%.8f,%.8f,%s,%s,%.1f,%.1f,%.1f,%s,%.1f\n", u.format(dt), l.format(dt), ms/1000.0, lat, lon,
-                    name[i], mag[i], az[i], alt[i], dms3(az[i]), dms3(alt[i]), elev, tempF, usedPressure(), ntpS != null ? "ntp" : "device", ntpS != null ? ntpS[2] : -1.0)); n++; }
+                String rel = Double.isNaN(azRef) ? "" : String.format(Locale.US, "%.8f", ((az[i] - azRef + 540) % 360) - 180);
+                w.write(String.format(Locale.US, "%s,%s,%.3f,%.8f,%.8f,\"%s\",%.2f,%.8f,%.8f,%.8f,%s,%s,%s,%.1f,%.1f,%.1f,%s,%.1f\n", u.format(dt), l.format(dt), ms/1000.0, lat, lon,
+                    name[i], mag[i], az[i], alt[i], 90 - alt[i], dms3(az[i]), dms3(alt[i]), rel, elev, tempF, usedPressure(), ntpS != null ? "ntp" : "device", ntpS != null ? ntpS[2] : -1.0)); n++; }
             w.close();
+            if (sIdx >= 0) { azRef = az[sIdx]; sky.cO = 0; sky.invalidate(); }     // recorded azimuth becomes the new zero
             vib(); Toast.makeText(this, "Saved " + n + " rows to\n" + f.getAbsolutePath(), Toast.LENGTH_LONG).show();
         } catch (Exception e) { Toast.makeText(this, "Error: " + e.getMessage(), Toast.LENGTH_LONG).show(); }
     }
+    class Pager extends HorizontalScrollView { Pager(Context c) { super(c); } @Override public void fling(int v) {} }   // no fling: pages snap
     class Sky extends View {
-        Paint p = new Paint(Paint.ANTI_ALIAS_FLAG); float sx = 1, sy = 1, baseX = 1, cx; double zoom = 1, cO = 0;   // cO = azimuth (from north, -180..180) at screen centre
+        Paint p = new Paint(Paint.ANTI_ALIAS_FLAG); float sx = 1, sy = 1, baseX = 1, baseY = 1, cx, cy; double zx = 1, zy = 1, cO = 0, cA = 30;   // zoom x/y, centre az offset / altitude
         ScaleGestureDetector sg; GestureDetector gd;
         Sky(Context c) {
             super(c);
             sg = new ScaleGestureDetector(c, new ScaleGestureDetector.SimpleOnScaleGestureListener() {
                 @Override public boolean onScale(ScaleGestureDetector d) {
-                    double o = cO + (d.getFocusX()-cx)/sx;                       // azimuth under the fingers
-                    zoom = Math.max(1, Math.min(40, zoom*d.getScaleFactor())); sx = baseX*(float)zoom;
-                    cO = wrap(o - (d.getFocusX()-cx)/sx); invalidate(); return true; } });
+                    double o = cO + (d.getFocusX()-cx)/sx, a = cA - (d.getFocusY()-cy)/sy;       // sky point under the fingers
+                    float px = d.getPreviousSpanX(), py = d.getPreviousSpanY();
+                    double fx = px > 60 ? d.getCurrentSpanX()/px : 1, fy = py > 60 ? d.getCurrentSpanY()/py : 1;
+                    if (fx == 1 && fy == 1) fx = fy = d.getScaleFactor();
+                    zx = Math.max(1, Math.min(40, zx*fx)); zy = Math.max(1, Math.min(12, zy*fy)); sx = baseX*(float)zx; sy = baseY*(float)zy;
+                    cO = wrap(o - (d.getFocusX()-cx)/sx); cA = a + (d.getFocusY()-cy)/sy; clamp(); invalidate(); return true; } });
             gd = new GestureDetector(c, new GestureDetector.SimpleOnGestureListener() {
                 @Override public boolean onDown(MotionEvent e) { return true; }
                 @Override public boolean onScroll(MotionEvent a, MotionEvent b, float dx, float dy) {
-                    if (sg.isInProgress()) return false; cO = wrap(cO + dx/sx); invalidate(); return true; }
-                @Override public boolean onDoubleTap(MotionEvent e) { zoom = 1; cO = 0; invalidate(); return true; }
+                    if (sg.isInProgress()) return false; cO = wrap(cO + dx/sx); cA -= dy/sy; clamp(); invalidate(); return true; }
+                @Override public boolean onDoubleTap(MotionEvent e) { zx = 1; zy = 1; cO = 0; cA = 30; invalidate(); return true; }
                 @Override public boolean onSingleTapUp(MotionEvent e) { pick(e.getX(), e.getY()); return true; } });
         }
-        void lay() { baseX = getWidth()/360f; sx = baseX*(float)zoom; sy = getHeight()/30f; cx = getWidth()/2f; }
+        void lay() { baseX = getWidth()/360f; baseY = getHeight()/50f; sx = baseX*(float)zx; sy = baseY*(float)zy; cx = getWidth()/2f; cy = getHeight()/2f; }
+        void clamp() { double half = 25/zy; cA = Math.max(5 + half, Math.min(55 - half, cA)); }
         double wrap(double d) { d %= 360; if (d > 180) d -= 360; if (d < -180) d += 360; return d; }
         float X(double o) { return cx + (float)wrap(o - cO)*sx; }
-        float Y(double a) { return (float)(42 - a)*sy; }                        // altitude axis fixed: 42 deg top, 12 deg bottom
-        boolean onScreen(int i) { float x = X(off[i]); return alt[i] >= 12 && alt[i] <= 42 && x >= 0 && x <= getWidth(); }
+        float Y(double a) { return cy + (float)(cA - a)*sy; }                    // altitude axis: 55 deg top, 5 deg bottom at zoom 1
+        boolean onScreen(int i) { float x = X(off[i]), y = Y(alt[i]); return x >= 0 && x <= getWidth() && y >= 0 && y <= getHeight(); }
         @Override protected void onDraw(Canvas c) {
-            lay(); int W = getWidth(), H = getHeight(); c.drawColor(cBg); float ts = sy*0.7f; p.setTextSize(ts); p.setStyle(Paint.Style.FILL);
+            lay(); clamp(); int W = getWidth(), H = getHeight(); float dn = getResources().getDisplayMetrics().density, ts = 11*dn;
+            c.drawColor(cBg); p.setTextSize(ts); p.setStyle(Paint.Style.FILL); p.setStrokeWidth(1);
+            double ro = Double.isNaN(azRef) ? 0 : azRef;
             int st = 90; for (int q : new int[]{1,2,5,10,15,30,45,90}) if (q*sx >= 45) { st = q; break; }
-            p.setStrokeWidth(1);
-            for (int az = 0; az < 360; az += st) { float x = X(wrap(az)); if (x < -2 || x > W+2) continue;
-                p.setColor(cGrid); c.drawLine(x, 0, x, H, p); p.setColor(cGrid); c.drawText(az+"°", x+3, ts+2, p); }
-            for (int a = 15; a <= 40; a += 5) { p.setColor(cAltLn); p.setStrokeWidth(2); c.drawLine(0,Y(a),W,Y(a),p);
-                p.setColor(cAltTx); p.setTextSize(sy*0.9f); p.setFakeBoldText(true); String t = a+"°"; c.drawText(t,4,Y(a)-4,p); c.drawText(t,W-4-p.measureText(t),Y(a)-4,p);
-                p.setFakeBoldText(false); p.setTextSize(ts); p.setStrokeWidth(1); }
-            p.setColor(cMer); p.setStrokeWidth(3); c.drawLine(X(0),0,X(0),H,p); c.drawText("N Meridian", X(0)+6, 2.4f*ts, p);
-            p.setAlpha(120); p.setStrokeWidth(2); c.drawLine(X(180),0,X(180),H,p); p.setAlpha(255); p.setStrokeWidth(1); c.drawText("S Meridian", X(180)+6, 2.4f*ts, p);
+            for (int az = 0; az < 360; az += st) { float x = X(wrap(az)); if (x < -2 || x > W+2) continue; p.setColor(cGrid); c.drawLine(x, 0, x, H, p); c.drawText(az+"\u00b0", x+3, ts+2, p); }
+            int ast = 10; for (int q : new int[]{1,2,5,10}) if (q*sy >= 36*dn/3) { ast = q; break; }
+            for (int a = 5; a <= 55; a++) if (a % ast == 0) { float y = Y(a); if (y < 0 || y > H) continue;
+                p.setColor(cAltLn); p.setStrokeWidth(2); c.drawLine(0, y, W, y, p);
+                p.setColor(cAltTx); p.setTextSize(ts*1.2f); p.setFakeBoldText(true); String l1 = (90-a)+"\u00b0", l2 = (90-a)+"\u00b0";
+                c.drawText(l1, 4, y-4, p); c.drawText(l2, W-4-p.measureText(l2), y-4, p); p.setFakeBoldText(false); p.setTextSize(ts); p.setStrokeWidth(1); }
+            p.setColor(cAltTx); p.setFakeBoldText(true); p.setTextSize(ts*1.3f); c.drawText("90-Alt", 4, H-6, p); c.drawText("90-Alt", W-4-p.measureText("90-Alt"), H-6, p); p.setFakeBoldText(false); p.setTextSize(ts);
+            float xn = X(wrap(-ro)); p.setColor(cMer); p.setStrokeWidth(3); c.drawLine(xn, 0, xn, H, p); p.setStrokeWidth(1); c.drawText("N Meridian", xn+6, 2.6f*ts, p);
+            if (!Double.isNaN(azRef)) { float xf = X(0); p.setColor(cFalse); p.setStrokeWidth(3); p.setPathEffect(new DashPathEffect(new float[]{16, 10}, 0));
+                c.drawLine(xf, 0, xf, H, p); p.setPathEffect(null); p.setStrokeWidth(1); c.drawText("False N (zero)", xf+6, 4f*ts, p); }
             p.setColor(cLine); p.setStrokeWidth(2);
-            for (int[] g : segs) { double dd = wrap(off[g[1]] - off[g[0]]); if (Math.abs(dd) > 60) continue;
-                float x1 = X(off[g[0]]); c.drawLine(x1, Y(alt[g[0]]), x1 + (float)dd*sx, Y(alt[g[1]]), p); }
-            int si = selIdx(); double lblMag = zoom < 4 ? 1.5 : 2.6;
+            for (int[] g : segs) { double df = wrap(off[g[1]] - off[g[0]]); if (Math.abs(df) > 60) continue;
+                float x1 = X(off[g[0]]); c.drawLine(x1, Y(alt[g[0]]), x1 + (float)df*sx, Y(alt[g[1]]), p); }
+            int si = selIdx(); double lblMag = zx < 4 ? 1.5 : 2.6;
             for (int i = 0; i < N; i++) {
                 float x = X(off[i]), y = Y(alt[i]); if (x < -20 || x > W+20 || y < -20 || y > H+20) continue;
-                float r = Math.max(1.2f, (5.2f - (float)mag[i])*sy*0.2f);
+                float r = Math.max(1.2f, (5.2f - (float)mag[i])*0.85f*dn);
                 p.setColor(cStar); p.setStyle(Paint.Style.FILL); c.drawCircle(x, y, r, p);
                 if (mag[i] < lblMag) { p.setColor(cLbl); c.drawText(name[i], x + r + 4, y - r, p); }
                 if (i == si) { p.setColor(cSel); p.setStyle(Paint.Style.STROKE); p.setStrokeWidth(3); c.drawCircle(x, y, r + 10, p); p.setStyle(Paint.Style.FILL); }
             }
             p.setColor(cTx); p.setStyle(Paint.Style.FILL); p.setStrokeWidth(1); p.setFakeBoldText(true); p.setTextSize(ts*1.6f);
-            String[] cn = {"N","E","S","W"}; for (int k = 0; k < 4; k++) { float x = X(wrap(90*k)); if (x > 0 && x < W) c.drawText(cn[k], x - p.measureText(cn[k])/2, H - 6, p); }
-            p.setFakeBoldText(false); p.setTextSize(ts); c.drawText(String.format(Locale.US, "x%.1f  %.0f\u00b0", zoom, W/sx), W - 9*ts, H - 6, p);
+            String[] cn = {"N","E","S","W"}; for (int k = 0; k < 4; k++) { float x = X(wrap(90*k - ro)); if (x > 0 && x < W) c.drawText(cn[k], x - p.measureText(cn[k])/2, H - 6, p); }
+            p.setFakeBoldText(false); p.setTextSize(ts); c.drawText(String.format(Locale.US, "x%.1f/%.1f  %.0f\u00b0 x %.0f\u00b0", zx, zy, W/sx, H/sy), W/2f - 5*ts, H - 6 - 2*ts, p);
         }
         void pick(float px, float py) {
-            float best = sy*3; int bi = -1;
+            float best = 14*getResources().getDisplayMetrics().density; int bi = -1;
             for (int i = 0; i < N; i++) { if (!vis(i)) continue; float d = (float)Math.hypot(X(off[i])-px, Y(alt[i])-py); if (d < best) { best = d; bi = i; } }
             if (bi >= 0) sel = name[bi]; updateInfo(); invalidate();
         }
-        @Override public boolean onTouchEvent(MotionEvent e) { lay(); sg.onTouchEvent(e); gd.onTouchEvent(e); return true; }
+        @Override public boolean onTouchEvent(MotionEvent e) { getParent().requestDisallowInterceptTouchEvent(true); lay(); sg.onTouchEvent(e); gd.onTouchEvent(e); return true; }
     }
 }
